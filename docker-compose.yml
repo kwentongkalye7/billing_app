@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: billing_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-billing_app}
+      POSTGRES_USER: ${POSTGRES_USER:-billing_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billing_app}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-billing_app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: billing_backend
+    environment:
+      DJANGO_SETTINGS_MODULE: billing_project.settings
+      DATABASE_URL: ${DATABASE_URL:-postgresql://billing_app:billing_app@db:5432/billing_app}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+    volumes:
+      - ./backend:/app
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: billing_frontend
+    command: ["npm", "run", "dev"]
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+      VITE_PORT: ${VITE_PORT:-5173}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: billing_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./ops/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  media_data:
+  caddy_data:
+  caddy_config:

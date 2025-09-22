@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Statement of Account — {{ statement.number|default:"Draft" }}</title>
+    <style>
+      body {
+        font-family: "Inter", "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 24px;
+        color: #1f2937;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .branding {
+        max-width: 240px;
+      }
+      h1 {
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 24px;
+      }
+      th, td {
+        border: 1px solid #e5e7eb;
+        padding: 8px 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #f9fafb;
+      }
+      .totals {
+        margin-top: 24px;
+        width: 40%;
+        margin-left: auto;
+        border: 1px solid #e5e7eb;
+      }
+      .totals td {
+        border: none;
+      }
+      .totals tr + tr td {
+        border-top: 1px solid #e5e7eb;
+      }
+      .meta {
+        margin-top: 16px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="branding">
+        {% if client.branding_logo %}
+          <img src="{{ client.branding_logo.url }}" alt="{{ client.name }} logo" style="max-height: 80px;" />
+        {% else %}
+          <strong>{{ site_name }}</strong>
+        {% endif %}
+        {% if client.branding_header_note %}
+          <p>{{ client.branding_header_note }}</p>
+        {% endif %}
+      </div>
+      <div style="text-align: right;">
+        <h1>Statement of Account</h1>
+        <div>SOA #: {{ statement.number|default:"Draft" }}</div>
+        <div>Period: {{ statement.period }}</div>
+        <div>Issue Date: {{ statement.issue_date|default:"TBD" }}</div>
+        <div>Due Date: {{ statement.due_date|default:"TBD" }}</div>
+      </div>
+    </header>
+
+    <section style="margin-top: 24px;">
+      <h2 style="font-size: 18px; margin-bottom: 8px;">Bill To</h2>
+      <div><strong>{{ client.name }}</strong></div>
+      <div>{{ client.billing_address|linebreaksbr }}</div>
+      <div>TIN: {{ client.tin|default:"—" }}</div>
+    </section>
+
+    <section style="margin-top: 24px;">
+      <h2 style="font-size: 18px; margin-bottom: 8px;">Engagement</h2>
+      <div>{{ engagement.title }} — {{ engagement.get_type_display }}</div>
+      <div>Status: {{ engagement.get_status_display }}</div>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="width: 80px;">Qty</th>
+          <th style="width: 80px;">Unit</th>
+          <th style="width: 120px;">Unit Price (PHP)</th>
+          <th style="width: 120px;">Line Total (PHP)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.qty }}</td>
+            <td>{{ item.unit }}</td>
+            <td style="text-align: right;">{{ item.unit_price|floatformat:2 }}</td>
+            <td style="text-align: right;">{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" style="text-align: center;">No line items recorded.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr>
+        <td>Subtotal</td>
+        <td style="text-align: right;">{{ statement.sub_total|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td>Paid to Date</td>
+        <td style="text-align: right;">{{ statement.paid_to_date|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td><strong>Balance</strong></td>
+        <td style="text-align: right;"><strong>{{ statement.balance|floatformat:2 }}</strong></td>
+      </tr>
+    </table>
+
+    {% if statement.notes %}
+      <section style="margin-top: 24px;">
+        <h3 style="font-size: 16px; margin-bottom: 8px;">Notes</h3>
+        <p>{{ statement.notes|linebreaksbr }}</p>
+      </section>
+    {% endif %}
+
+    <footer>
+      <div>Generated for {{ client.name }} on {{ statement.updated_at|date:"Y-m-d H:i" }} by {{ generated_by }}</div>
+      <div>Manual invoice numbers are captured at payment time per BIR policy. Amounts exclude tax/withholding.</div>
+    </footer>
+  </body>
+</html>
