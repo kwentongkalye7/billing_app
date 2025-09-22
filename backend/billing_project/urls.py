@@ -13,6 +13,7 @@ from payments.api import PaymentViewSet, PaymentAllocationViewSet, UnappliedCred
 from sequences.api import SequenceViewSet
 from reports.api import AgingReportView, CollectionsRegisterView, UnappliedCreditReportView, AuditLogView
 from audit.api import AuditLogViewSet
+from common.views import DevResetView
 
 router = routers.DefaultRouter()
 router.register(r"users", UserViewSet, basename="user")
@@ -39,6 +40,7 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/docs/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path("api/dev/reset/", DevResetView.as_view(), name="dev-reset"),
 ]
 
 if settings.DEBUG:

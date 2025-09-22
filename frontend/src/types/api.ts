@@ -79,6 +79,8 @@ export interface Payment {
   amount_received: string;
   method: string;
   manual_invoice_no: string;
+  reference_no?: string;
+  notes?: string;
   status: string;
   remaining_unallocated: string;
   allocations?: PaymentAllocation[];

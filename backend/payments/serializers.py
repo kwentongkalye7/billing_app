@@ -74,6 +74,17 @@ class PaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Currency must be PHP")
         return value
 
+    def validate(self, attrs):
+        client = attrs.get('client') or getattr(self.instance, 'client', None)
+        manual_invoice = attrs.get('manual_invoice_no') or getattr(self.instance, 'manual_invoice_no', None)
+        if client and manual_invoice:
+            qs = Payment.objects.filter(client=client, manual_invoice_no=manual_invoice)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError({"manual_invoice_no": "Manual invoice already exists for this client."})
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         allocations: List[dict] = validated_data.pop("allocations", [])

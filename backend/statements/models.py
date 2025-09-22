@@ -71,7 +71,7 @@ class BillingStatement(TimeStampedUserModel):
         if not number:
             from sequences.models import Sequence
 
-            number = Sequence.objects.assign_next("SOA", actor=actor)
+            number = Sequence.assign_next("SOA", actor=actor)
         self.number = number
         self.issue_date = issue_date
         self.due_date = due_date

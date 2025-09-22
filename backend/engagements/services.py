@@ -7,6 +7,7 @@ from typing import Dict
 from django.db import transaction
 
 from accounts.models import User
+from clients.models import Client
 from statements.models import BillingStatement, BillingItem
 from .models import Engagement
 
@@ -41,6 +42,7 @@ def run_retainer_cycle(period: str, actor: User) -> Dict[str, int]:
     engagements = Engagement.objects.select_related("client").filter(
         type=Engagement.Types.RETAINER,
         status=Engagement.Status.ACTIVE,
+        client__status=Client.Status.ACTIVE,
     )
 
     for engagement in engagements:

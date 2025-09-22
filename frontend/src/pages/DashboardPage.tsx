@@ -1,11 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import { axiosClient } from "../api/client";
+import { useAuthStore } from "../hooks/useAuth";
 import { PageHeader } from "../components/PageHeader";
 import type { BillingStatement, Payment } from "../types/api";
 
 const DashboardPage = () => {
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      await axiosClient.post('/dev/reset/');
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.reload();
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail ?? 'Reset failed');
+    },
+  });
+
   const { data: statements } = useQuery<BillingStatement[]>({
     queryKey: ["statements", { limit: 5 }],
     queryFn: async () => {
@@ -28,6 +45,21 @@ const DashboardPage = () => {
         title="Dashboard"
         description="At-a-glance view of recent activity across statements and collections."
       />
+            {import.meta.env.DEV && user?.role === 'admin' && (
+        <button
+          onClick={async () => {
+            if (resetMutation.isLoading) return;
+            if (confirm('This will delete all business data. Continue?')) {
+              await resetMutation.mutateAsync();
+            }
+          }}
+          className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 disabled:opacity-60"
+          disabled={resetMutation.isLoading}
+        >
+          {resetMutation.isLoading ? 'Resetting…' : 'Reset Demo Data'}
+        </button>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">

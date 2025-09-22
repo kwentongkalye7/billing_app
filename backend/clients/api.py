@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from rest_framework import viewsets
+
+import django_filters
 from rest_framework.permissions import IsAuthenticated
 
 from accounts.permissions import IsAdmin, IsAdminOrReviewer
@@ -8,11 +10,29 @@ from .models import Client, Contact
 from .serializers import ClientSerializer, ContactSerializer
 
 
+class ClientFilter(django_filters.FilterSet):
+    tags = django_filters.CharFilter(method="filter_tags")
+
+    class Meta:
+        model = Client
+        fields = ["status", "tags"]
+
+    def filter_tags(self, queryset, name, value):
+        if not value:
+            return queryset
+        values = [v.strip() for v in value.split(",") if v.strip()]
+        if not values:
+            return queryset
+        for val in values:
+            queryset = queryset.filter(tags__contains=[val])
+        return queryset
+
+
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
     queryset = Client.objects.prefetch_related("contacts").all()
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["status", "tags"]
+    filterset_class = ClientFilter
     search_fields = ["name", "normalized_name", "aliases", "group", "tags"]
     ordering_fields = ["name", "status", "created_at", "updated_at"]
 

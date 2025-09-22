@@ -48,8 +48,13 @@ class Payment(TimeStampedUserModel):
         return self.allocations.aggregate(total=models.Sum("amount_applied"))["total"] or Decimal("0.00")
 
     @property
-    def remaining_unallocated(self) -> Decimal:
-        return (self.amount_received or Decimal("0.00")) - self.allocated_amount
+    def delete(self, using=None, keep_parents=False):
+        # Manually delete allocations so their hooks update statements
+        for allocation in list(self.allocations.all()):
+            allocation.delete()
+        # Remove any related unapplied credits before deleting the payment
+        self.unapplied_credits.all().delete()
+        return super().delete(using=using, keep_parents=keep_parents)
 
     def clean(self):
         if self.currency != "PHP":

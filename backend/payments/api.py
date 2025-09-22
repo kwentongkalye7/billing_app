@@ -49,6 +49,11 @@ class PaymentViewSet(viewsets.ModelViewSet):
         payment = serializer.save(updated_by=self.request.user)
         log_action(actor=self.request.user, action="payment.update", instance=payment, before=before)
 
+    def perform_destroy(self, instance):
+        snapshot = diff_model(instance)
+        instance.delete()
+        log_action(actor=self.request.user, action="payment.delete", instance=instance, before=snapshot)
+
     @action(detail=True, methods=["post"], permission_classes=[IsAdminOrReviewer])
     def verify(self, request, pk=None):
         payment = self.get_object()
